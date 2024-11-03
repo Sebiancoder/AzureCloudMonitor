@@ -63,12 +63,12 @@ void loop() {
   if (costData == -2.0) {
 
     azureAccessToken = "";
-    continue;
+    return;
 
   }
-
+  
   Serial.println(costData);
 
-  delay(5000);
+  delay(15000);
 
 }

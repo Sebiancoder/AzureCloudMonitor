@@ -84,7 +84,8 @@ float fetchCost(String billingAccount, aggMode aggregationMode, String accessTok
 
   httpClient.begin(secureWifiClient, requestURL);
   httpClient.addHeader("Authorization", "Bearer " + accessToken);
-
+  httpClient.addHeader("Content-Type", "application/json");
+  
   //get response
   int responseCode = httpClient.POST(postString);
 
