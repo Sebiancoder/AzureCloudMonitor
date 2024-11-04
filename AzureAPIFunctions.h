@@ -12,13 +12,14 @@ extern HTTPClient httpClient;
 //function declarations
 String fetchAzureAccessTokenSP(String tenantId, String appId, String secretKey);
 float fetchCost(String billingAccount, aggMode aggregationMode);
+bool haltAllVM(String subscriptionId);
 
 //fetch azure access token using service principal
-String fetchAzureAccessTokenSP(String tenantId, String appId, String secretKey) {
+String fetchAzureAccessTokenSP(String tenantId, String appId, String secretKey, String scope) {
 
   String requestURL = "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
 
-  String postData = "client_id=" + appId + "&grant_type=client_credentials" + "&scope=https://management.azure.com/.default" + "&client_secret=" + secretKey;
+  String postData = "client_id=" + appId + "&grant_type=client_credentials" + "&scope=" + scope + "&client_secret=" + secretKey;
 
   //format http request
   httpClient.begin(secureWifiClient, requestURL);
@@ -157,5 +158,94 @@ float fetchCost(String billingAccount, aggMode aggregationMode, String accessTok
 
   httpClient.end();
   return -1.0;
+
+}
+
+bool haltAllVM(String subscriptionId, String accessToken) {
+  
+  String requestURL = "https://management.azure.com/subscriptions/" + subscriptionId + "/providers/Microsoft.Compute/virtualMachines?api-version=2024-07-01?statusOnly=true";
+
+  httpClient.begin(secureWifiClient, requestURL);
+  httpClient.addHeader("Authorization", "Bearer " + accessToken);
+
+  int responseCode = httpClient.GET();
+
+  if (responseCode > 0) {
+
+    if (responseCode == HTTP_CODE_OK) {
+            
+      String payload = httpClient.getString();
+
+      httpClient.end();
+
+      StaticJsonDocument<4096> doc;
+
+      // Parse the JSON response
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (error) {
+
+        Serial.print(F("Failed to parse JSON: "));
+        Serial.println(error.f_str());
+        return false;  
+        
+      }
+
+      //vms
+      JsonArray vms = doc["value"].as<JsonArray>();
+
+      //iterate over vms
+      for (JsonObject vm : vms) {
+
+        String vmName = vm["name"].as<String>();
+        String vmId = vm["id"].as<String>();
+
+        String resourceGroup = vmId.substring(vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/"), vmId.indexOf("/providers/", vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/")));
+
+        //check if is active
+        JsonArray statuses = vm["properties"]["instanceView"]["statuses"].as<JsonArray>();
+
+        if (statuses.isNull() || statuses.size() == 0) {
+
+          continue;
+
+        }
+
+        if (statuses[statuses.size() - 1]["code"].as<String>() == "PowerState/deallocated") {
+
+          continue;
+
+        }
+
+        //now, we need to deallocate the vm
+        String deallocationRequestURL = "https://management.azure.com/subscriptions/" + subscriptionId + "/resourceGroups/"+ resourceGroup + "/providers/Microsoft.Compute/virtualMachines/" + vmName + "/deallocate?api-version=2024-07-01";
+
+        httpClient.begin(secureWifiClient, deallocationRequestURL);
+        httpClient.addHeader("Authorization", "Bearer " + accessToken);
+
+        int deallocationResponseCode = httpClient.POST("");
+
+        if (deallocationResponseCode != HTTP_CODE_ACCEPTED) {
+
+          Serial.println("Deallocation on " + vmName + " Virtual Machine Failed.");
+
+        }
+
+
+      }
+
+    } else {
+
+      Serial.print("Failed, HTTP response code: " + String(responseCode));
+      httpClient.end();
+
+    }
+
+  } else {
+
+    Serial.println("Connection ERROR");
+    httpClient.end();
+
+  }
 
 }
