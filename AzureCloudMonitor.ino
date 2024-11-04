@@ -7,6 +7,9 @@
 #include <AggModeEnum.h>
 #include <MotorControlTransmitter.h>
 
+//time between each run of logic loop
+const int LOOP_DELAY = 15000;
+
 //declare secure wifi client and http client
 WiFiClientSecure secureWifiClient;
 HTTPClient httpClient;
@@ -99,10 +102,10 @@ void loop() {
 
   } else {
 
-    
+
 
   }
 
-  delay(15000);
+  delay(LOOP_DELAY);
 
 }
