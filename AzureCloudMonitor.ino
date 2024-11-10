@@ -6,6 +6,7 @@
 #include <AzureAPIFunctions.h>
 #include <AggModeEnum.h>
 #include <MotorControlTransmitter.h>
+#include <AlarmControl.h>
 
 //time between each run of logic loop
 const int LOOP_DELAY = 500;
