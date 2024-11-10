@@ -8,7 +8,13 @@
 #include <MotorControlTransmitter.h>
 
 //time between each run of logic loop
-const int LOOP_DELAY = 15000;
+const int LOOP_DELAY = 500;
+
+//number of milliseconds between each Azure call (to prevent 429 too many requests errors)
+const int AZURE_CALL_FREQUENCY = 15000;
+
+//count number of loops
+int loopCounter = 0;
 
 //declare secure wifi client and http client
 WiFiClientSecure secureWifiClient;
@@ -34,6 +40,9 @@ String azureAccessToken = "";
 
 //aggregation mode
 aggMode currAggMode = TODAY;
+
+//curr cost value to display
+float currDisplayValue = 0.0;
 
 //alarmMode
 bool alarmMode = false;
@@ -68,37 +77,51 @@ void setup() {
   //set up transmission to Motor Control Microprocessor
   Wire.begin();
 
+  //set up pins
+  pinMode(ALARM_BUTTON_PIN, INPUT_PULLUP);
+
+  //add button handlers
+  attachInterrupt(digitalPinToInterrupt(ALARM_BUTTON_PIN), handleAlarmButtonPress, RISING);
+
 }
 
 void loop() {
   
   if (!alarmMode) {
   
-    //first, if azure access token is not set, fetch azure access token
-    if (azureAccessToken == "") {
+    if ((loopCounter * LOOP_DELAY) == AZURE_CALL_FREQUENCY) {
 
-      azureAccessToken = fetchAzureAccessTokenSP(AZURE_TENANT_ID, AZURE_SP_APP_ID, AZURE_SP_SK, MANAGEMENT_SCOPE);
+      //first, if azure access token is not set, fetch azure access token
+      if (azureAccessToken == "") {
+
+        azureAccessToken = fetchAzureAccessTokenSP(AZURE_TENANT_ID, AZURE_SP_APP_ID, AZURE_SP_SK, MANAGEMENT_SCOPE);
+
+      }
+
+      //send request for cost data
+      float costData = fetchCost(BILLING_ACCOUNT_ID, currAggMode, azureAccessToken);
+
+      //if costData is -2, that means accessToken has expired (401 returned from api call), and we need to regenerate the token
+      if (costData == -2.0) {
+
+        azureAccessToken = "";
+        return;
+
+      } else if (costData == -1.0) {
+
+        return;
+
+      }
+
+      Serial.println(azureAccessToken);
+
+      currDisplayValue = costData;
+
+      loopCounter = 0;
 
     }
-
-    //send request for cost data
-    float costData = fetchCost(BILLING_ACCOUNT_ID, currAggMode, azureAccessToken);
-
-    //if costData is -2, that means accessToken has expired (401 returned from api call), and we need to regenerate the token
-    if (costData == -2.0) {
-
-      azureAccessToken = "";
-      return;
-
-    } else if (costData == -1.0) {
-
-      return;
-
-    }
-
-    Serial.println(azureAccessToken);
     
-    sendCostAndAlarmToDisplay(costData, alarmMode);
+    sendCostAndAlarmToDisplay(currDisplayValue, alarmMode);
 
   } else {
 
@@ -106,6 +129,7 @@ void loop() {
 
   }
 
+  loopCounter++;
   delay(LOOP_DELAY);
 
 }
