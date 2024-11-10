@@ -1,12 +1,12 @@
 #include <AggModeEnum.h>
 
-extern currAggMode;
-extern alarmMode;
-extern alarmActivated;
+extern aggMode currAggMode;
+extern bool alarmMode;
+extern bool alarmActivated;
 
-extern alarmThresholdYTD;
-extern alarmThresholdMTD;
-extern alarmThresholdTDY;
+extern float alarmThresholdYTD;
+extern float alarmThresholdMTD;
+extern float alarmThresholdTDY;
 
 const int ALARM_BUTTON_PIN = 13;
 
