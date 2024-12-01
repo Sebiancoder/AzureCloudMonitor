@@ -8,6 +8,7 @@
 #include <MotorControlTransmitter.h>
 #include <AlarmControl.h>
 #include <ToggleControl.h>
+#include <Shutdown.h>
 
 //time between each run of logic loop
 const int LOOP_DELAY = 1000;
@@ -60,8 +61,14 @@ bool alarmActivated = false;
 //if true, vm shutdown message will be sent on next cycle
 bool shutdownVMs = false;
 
+//number of maximum attempts to shutdown vms
+const int MAX_VM_SHUTDOWN_ATTEMPTS = 10;
+
+//number of current shutdown attempts
+int vmShutdownAttempts = 0;
+
+
 void setup() {
-  // put your setup code here, to run once:
 
   //serial stream
   Serial.begin(115200);
@@ -85,13 +92,17 @@ void setup() {
   //set up pins
   pinMode(ALARM_BUTTON_PIN, INPUT_PULLUP);
   pinMode(TOGGLE_AGG_PIN, INPUT_PULLUP);
+  pinMode(SHUTDOWN_BUTTON_PIN, INPUT_PULLUP);
   pinMode(YTD_LED_PIN, OUTPUT);
   pinMode(MTD_LED_PIN, OUTPUT);
   pinMode(TDY_LED_PIN, OUTPUT);
+  pinMode(ALARM_LIGHT_PIN, OUTPUT);
+  pinMode(ALARM_SOUND_PIN, OUTPUT);
 
   //add button handlers
   attachInterrupt(digitalPinToInterrupt(ALARM_BUTTON_PIN), handleAlarmButtonPress, RISING);
   attachInterrupt(digitalPinToInterrupt(TOGGLE_AGG_PIN), handleAggTogglePress, RISING);
+  attachInterrupt(digitalPinToInterrupt(SHUTDOWN_BUTTON_PIN), handleShutdownPress, RISING);
 
 }
 
@@ -133,9 +144,18 @@ void loop() {
     
     sendCostAndAlarmToDisplay(currDisplayValue, alarmMode);
 
+    //keep alarm light off if alarm is not activated
+    if (!alarmActivated) {
+
+      digitalWrite(ALARM_LIGHT_PIN, LOW);
+
+    }
+
   } else {
 
     sendCostAndAlarmToDisplay(0.0, true);
+
+    digitalWrite(ALARM_LIGHT_PIN, HIGH);
 
   }
 
@@ -144,6 +164,53 @@ void loop() {
   Serial.println(currAggMode);
   Serial.print("Alarm Mode Activated: ");
   Serial.println(alarmMode);
+
+  //vm shutdown
+  if (shutdownVMs) {
+
+    Serial.println("Attempting VM Shutdown ... ");
+
+    bool shutdown_success = haltAllVM(SUBSCRIPTION_ID, azureAccessToken);
+
+    if (shutdown_success) {
+
+      shutdownVMs = false;
+      vmShutdownAttempts = 0;
+
+      //sound a success tone
+      tone(ALARM_SOUND_PIN, 294);
+      delay(200);
+      tone(ALARM_SOUND_PIN, 330);
+      delay(200);
+      tone(ALARM_SOUND_PIN, 350);
+      delay(200);
+      noTone(ALARM_SOUND_PIN);
+
+    } else {
+
+      vmShutdownAttempts += 1;
+
+    }
+
+    if (vmShutdownAttempts > MAX_VM_SHUTDOWN_ATTEMPTS) {
+
+      shutdownVMs = false;
+      vmShutdownAttempts = 0;
+
+      //sound a failure tone
+      tone(ALARM_SOUND_PIN, 350);
+      delay(200);
+      tone(ALARM_SOUND_PIN, 330);
+      delay(200);
+      tone(ALARM_SOUND_PIN, 294);
+      delay(200);
+      noTone(ALARM_SOUND_PIN);
+
+    }
+
+  }
+  
+  //alarm activation
 
   loopCounter++;
   delay(LOOP_DELAY);

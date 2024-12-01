@@ -163,7 +163,7 @@ float fetchCost(String billingAccount, aggMode aggregationMode, String accessTok
 
 bool haltAllVM(String subscriptionId, String accessToken) {
   
-  String requestURL = "https://management.azure.com/subscriptions/" + subscriptionId + "/providers/Microsoft.Compute/virtualMachines?api-version=2024-07-01?statusOnly=true";
+  String requestURL = "https://management.azure.com/subscriptions/" + subscriptionId + "/providers/Microsoft.Compute/virtualMachines?api-version=2024-07-01&statusOnly=true";
 
   httpClient.begin(secureWifiClient, requestURL);
   httpClient.addHeader("Authorization", "Bearer " + accessToken);
@@ -174,6 +174,8 @@ bool haltAllVM(String subscriptionId, String accessToken) {
 
     if (responseCode == HTTP_CODE_OK) {
             
+      Serial.println(" - Fetched All Virtual Machines");
+      
       String payload = httpClient.getString();
 
       httpClient.end();
@@ -194,16 +196,25 @@ bool haltAllVM(String subscriptionId, String accessToken) {
       //vms
       JsonArray vms = doc["value"].as<JsonArray>();
 
+      Serial.print(" - Checking ");
+      Serial.print(vms.size());
+      Serial.println(" Virtual Machines");
+
+      String vmName = "";
+      String vmId = "";
+      String resourceGroup = "";
+      JsonArray statuses;
+      
       //iterate over vms
-      for (JsonObject vm : vms) {
+      for (int i = 0; i < vms.size(); i++) {
 
-        String vmName = vm["name"].as<String>();
-        String vmId = vm["id"].as<String>();
+        vmName = vms[i]["name"].as<String>();
+        vmId = vms[i]["id"].as<String>();
 
-        String resourceGroup = vmId.substring(vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/"), vmId.indexOf("/providers/", vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/")));
-
+        resourceGroup = vmId.substring(vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/"), vmId.indexOf("/providers/", vmId.indexOf("/resourceGroups/") + strlen("/resourceGroups/")));
+        
         //check if is active
-        JsonArray statuses = vm["properties"]["instanceView"]["statuses"].as<JsonArray>();
+        statuses = vms[i]["properties"]["instanceView"]["statuses"].as<JsonArray>();
 
         if (statuses.isNull() || statuses.size() == 0) {
 
@@ -217,23 +228,30 @@ bool haltAllVM(String subscriptionId, String accessToken) {
 
         }
 
+        Serial.print(" - Deallocating Virtual Machine ");
+        Serial.println(vmName);
+
         //now, we need to deallocate the vm
         String deallocationRequestURL = "https://management.azure.com/subscriptions/" + subscriptionId + "/resourceGroups/"+ resourceGroup + "/providers/Microsoft.Compute/virtualMachines/" + vmName + "/deallocate?api-version=2024-07-01";
 
         httpClient.begin(secureWifiClient, deallocationRequestURL);
         httpClient.addHeader("Authorization", "Bearer " + accessToken);
+        httpClient.addHeader("Content-Length", "0");
 
         int deallocationResponseCode = httpClient.POST("");
 
         if (deallocationResponseCode != HTTP_CODE_ACCEPTED) {
 
-          Serial.println("Deallocation on " + vmName + " Virtual Machine Failed.");
+          Serial.print("Deallocation on " + vmName + " Virtual Machine Failed with HTTP code: ");
+          Serial.println(deallocationResponseCode);
 
           httpClient.end();
           return false;
 
         } else {
-
+          
+          Serial.print("Successfully De-allocated ");
+          Serial.println(vmName);
           httpClient.end();
           return true;
 
@@ -242,10 +260,14 @@ bool haltAllVM(String subscriptionId, String accessToken) {
 
       }
 
+      Serial.println("Done Shutting down Virtual Machines");
+      return true;
+
     } else {
 
       Serial.print("Failed, HTTP response code: " + String(responseCode));
       httpClient.end();
+      return false;
 
     }
 
@@ -253,6 +275,7 @@ bool haltAllVM(String subscriptionId, String accessToken) {
 
     Serial.println("Connection ERROR");
     httpClient.end();
+    return false;
 
   }
 
