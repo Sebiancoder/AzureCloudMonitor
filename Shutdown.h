@@ -1,0 +1,1 @@
+const int SHUTDOWN_BUTTON_PIN = 27;

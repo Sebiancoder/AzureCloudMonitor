@@ -229,6 +229,14 @@ bool haltAllVM(String subscriptionId, String accessToken) {
 
           Serial.println("Deallocation on " + vmName + " Virtual Machine Failed.");
 
+          httpClient.end();
+          return false;
+
+        } else {
+
+          httpClient.end();
+          return true;
+
         }
 
 

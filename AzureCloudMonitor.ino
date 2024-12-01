@@ -7,9 +7,10 @@
 #include <AggModeEnum.h>
 #include <MotorControlTransmitter.h>
 #include <AlarmControl.h>
+#include <ToggleControl.h>
 
 //time between each run of logic loop
-const int LOOP_DELAY = 500;
+const int LOOP_DELAY = 1000;
 
 //number of milliseconds between each Azure call (to prevent 429 too many requests errors)
 const int AZURE_CALL_FREQUENCY = 15000;
@@ -56,6 +57,9 @@ float alarmThresholdTDY = 0;
 //whether alarm activated
 bool alarmActivated = false;
 
+//if true, vm shutdown message will be sent on next cycle
+bool shutdownVMs = false;
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -80,9 +84,14 @@ void setup() {
 
   //set up pins
   pinMode(ALARM_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(TOGGLE_AGG_PIN, INPUT_PULLUP);
+  pinMode(YTD_LED_PIN, OUTPUT);
+  pinMode(MTD_LED_PIN, OUTPUT);
+  pinMode(TDY_LED_PIN, OUTPUT);
 
   //add button handlers
   attachInterrupt(digitalPinToInterrupt(ALARM_BUTTON_PIN), handleAlarmButtonPress, RISING);
+  attachInterrupt(digitalPinToInterrupt(TOGGLE_AGG_PIN), handleAggTogglePress, RISING);
 
 }
 
@@ -90,7 +99,7 @@ void loop() {
   
   if (!alarmMode) {
   
-    if ((loopCounter * LOOP_DELAY) == AZURE_CALL_FREQUENCY) {
+    if ((loopCounter * LOOP_DELAY) >= AZURE_CALL_FREQUENCY) {
 
       //first, if azure access token is not set, fetch azure access token
       if (azureAccessToken == "") {
@@ -126,9 +135,15 @@ void loop() {
 
   } else {
 
-
+    sendCostAndAlarmToDisplay(0.0, true);
 
   }
+
+  setAggLeds();
+  Serial.print("Aggregation Mode: ");
+  Serial.println(currAggMode);
+  Serial.print("Alarm Mode Activated: ");
+  Serial.println(alarmMode);
 
   loopCounter++;
   delay(LOOP_DELAY);
