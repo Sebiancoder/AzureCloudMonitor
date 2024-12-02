@@ -4,4 +4,4 @@ This repository contains the code for the Azure Cloud Monitor (pictured below), 
 
 ![img](images/IMG_4883.jpg)
 
-A sister repository exists for this project [here](), which contains code for the motor controller, a separate microcontroller (Arduino ATMega2650) that interfaces with the ESP32 via I2C protocol and is responsible for controlling the motors on the digit rotors. 
+A sister repository exists for this project [here](https://github.com/Sebiancoder/AzureCloudMonitorMotorControl), which contains code for the motor controller, a separate microcontroller (Arduino ATMega2650) that interfaces with the ESP32 via I2C protocol and is responsible for controlling the motors on the digit rotors. 
