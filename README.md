@@ -1,0 +1,6 @@
+# Azure Cloud Monitor
+
+This repository contains the code for the Azure Cloud Monitor (pictured below), a physical device powered by an ESP32, which can be used to display Azure cost data, alert for high usage, and control unexpected spending. This project was developed as a final project for my CS3651: Prototyping Intelligent Devices class at Georgia Tech. 
+
+[!img](images/IMG_4883.jpg)
+
