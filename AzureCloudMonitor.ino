@@ -35,7 +35,7 @@ const String MANAGEMENT_SCOPE = "https://management.azure.com/.default";
 String AZURE_TENANT_ID = "482198bb-ae7b-4b25-8b7a-6d7f32faa083";
 String SUBSCRIPTION_ID = "c5aebeeb-38f0-4fe1-8a9c-f383c06e478a";
 String AZURE_SP_APP_ID = "291f3150-93cf-424c-a2a7-3365001f1b34";
-String AZURE_SP_SK = "WNZ8Q~JzO3u7uurPGb.aH1kAMgI0mik54VLYuaO6";
+String AZURE_SP_SK = "WNZ8Q~JzO3u7uurPGb.aH1kAMgI0mik54VLYuaO6"; //don't worry, this key has been deactivated
 String BILLING_ACCOUNT_ID = "3f6e673c-aaeb-4c82-a5cf-07f492ecd074:e8087449-5d49-4633-ba1b-d0b078088dc1_2019-05-31";
 
 //hold azure access token
