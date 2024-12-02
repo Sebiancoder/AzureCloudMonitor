@@ -38,11 +38,20 @@ void sendCostAndAlarmToDisplay(float cost, bool alarmMode) {
 
 float requestAlarmThreshold() {
 
-  Wire.requestFrom(MOTOR_CONTROLLER_I2C_ADDRESS, 4); //size of a float is 4 bytes
+  Wire.requestFrom(MOTOR_CONTROLLER_I2C_ADDRESS, sizeof(int));
 
-  while(Wire.available()) {
+  if (Wire.available() == sizeof(int)) {
 
-    return (float) Wire.read();
+    byte highByte = Wire.read();
+    byte lowByte = Wire.read();
+    
+    int requestedValue = ((highByte << 8) | lowByte);
+
+    return requestedValue;
+
+  } else {
+
+    return 0;
 
   }
 

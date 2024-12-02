@@ -107,6 +107,8 @@ void setup() {
 }
 
 void loop() {
+
+  Serial.println("------------------------");
   
   if (!alarmMode) {
   
@@ -156,6 +158,33 @@ void loop() {
     sendCostAndAlarmToDisplay(0.0, true);
 
     digitalWrite(ALARM_LIGHT_PIN, HIGH);
+
+    //set alarm threshold
+    switch (currAggMode) {
+
+      case YEAR_TO_DATE:
+
+        alarmThresholdYTD = requestAlarmThreshold();
+        break;
+
+      case MONTH_TO_DATE:
+
+        alarmThresholdMTD = requestAlarmThreshold();
+        break;
+
+      case TODAY:
+
+        alarmThresholdTDY = requestAlarmThreshold();
+        break;
+
+    }
+
+    Serial.print("YTD Alarm: ");
+    Serial.println(alarmThresholdYTD);
+    Serial.print("MTD Alarm: ");
+    Serial.println(alarmThresholdMTD);
+    Serial.print("TODAY Alarm: ");
+    Serial.println(alarmThresholdTDY);
 
   }
 
@@ -210,7 +239,8 @@ void loop() {
 
   }
   
-  //alarm activation
+  //this function will check if alarm should be turned on, and will sound the alarm if so.
+  handleAlarmActivation(currDisplayValue);
 
   loopCounter++;
   delay(LOOP_DELAY);

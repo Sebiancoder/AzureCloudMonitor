@@ -59,3 +59,55 @@ void IRAM_ATTR handleAlarmButtonPress() {
   }
 
 }
+
+void handleAlarmActivation(int currCost) {
+
+  int currAlarmThreshold = 0;
+
+  if (alarmMode) {
+
+    return;
+
+  }
+  
+  switch (currAggMode) {
+
+    case YEAR_TO_DATE:
+
+      currAlarmThreshold = alarmThresholdYTD;
+      break;
+
+    case MONTH_TO_DATE:
+
+      currAlarmThreshold = alarmThresholdMTD;
+      break;
+
+    case TODAY:
+
+      currAlarmThreshold = alarmThresholdTDY;
+      break;
+
+  }
+
+  if ((currAlarmThreshold != 0) && (currCost > currAlarmThreshold)) {
+
+    alarmActivated = true;
+
+    //sound alarm
+    digitalWrite(ALARM_LIGHT_PIN, HIGH);
+    tone(ALARM_SOUND_PIN, 294);
+    delay(200);
+
+    digitalWrite(ALARM_LIGHT_PIN, LOW);
+    tone(ALARM_SOUND_PIN, 330);
+    delay(200);
+
+    digitalWrite(ALARM_LIGHT_PIN, HIGH);
+    tone(ALARM_SOUND_PIN, 294);
+    delay(200);
+
+    noTone(ALARM_SOUND_PIN);
+
+  }
+
+}
